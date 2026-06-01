@@ -2,7 +2,6 @@
   if (window.__reservibeScriptLoaded) return;
   window.__reservibeScriptLoaded = true;
 
-  // ==================== EMAILJS ====================
   const EMAILJS_PUBLIC_KEY = "6uca9VWSS7LtVc38X";
   const EMAILJS_SERVICE_ID = "service_73aqg3t";
   const EMAILJS_TEMPLATE_ID = "template_his3t8x";
@@ -11,7 +10,6 @@
     console.log("EmailJS initialized");
   }
 
-  // ==================== SUPABASE ====================
   if (!window.supabaseClient) {
     const SUPABASE_URL = 'https://fsfctwfhecwdmwsgttan.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZzZmN0d2ZoZWN3ZG13c2d0dGFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyNDU3NTcsImV4cCI6MjA5NTgyMTc1N30.qL8YSHl5Q5D5EX1oQxzqg5hwSPvyOZb2EX7vlt2wqu0';
@@ -20,7 +18,6 @@
   const supabase = window.supabaseClient;
   const MAX_PER_DAY = 5;
 
-  // DOM elements
   const loadingContainer = document.getElementById('loading-container');
   const authContainer = document.getElementById('auth-container');
   const appContainer = document.getElementById('app-container');
@@ -69,7 +66,6 @@
     setTimeout(() => toast.classList.add('hidden'), 3000);
   }
 
-  // Load about.html content
   async function loadAboutContent() {
     if (!aboutContentDiv) return;
     if (aboutLoaded) return;
@@ -85,7 +81,6 @@
     }
   }
 
-  // ==================== VIEW SWITCHING ====================
   function switchToView(view) {
     dashboardDiv?.classList.add('hidden');
     bookingDiv?.classList.add('hidden');
@@ -98,13 +93,11 @@
     }
   }
 
-  // Navigation handlers
   if (navDashboard) navDashboard.addEventListener('click', (e) => { e.preventDefault(); switchToView('dashboard'); });
   if (navBooking) navBooking.addEventListener('click', (e) => { e.preventDefault(); switchToView('booking'); renderCalendar(); });
   if (navAbout) navAbout.addEventListener('click', (e) => { e.preventDefault(); switchToView('about'); });
   if (cancelBtn) cancelBtn.addEventListener('click', () => { resetForm(); switchToView('dashboard'); });
 
-  // ==================== AUTH & PROFILE ====================
   async function ensureProfile() {
     if (!currentUser) return false;
     const { data, error } = await supabase.from('profiles').select('id').eq('id', currentUser.id).single();
@@ -144,7 +137,8 @@
     const startDay = firstDay.getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const weekdayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-    let html = `<div class="flex justify-between items-center mb-4">
+    let html = `
+      <div class="flex justify-between items-center mb-4">
         <button id="prev-month" class="bg-purple-200 hover:bg-purple-300 text-purple-800 px-3 py-1 rounded-full"><i class="fas fa-chevron-left"></i></button>
         <h2 class="font-serif text-xl text-purple-800">${monthNames[month]} ${year}</h2>
         <button id="next-month" class="bg-purple-200 hover:bg-purple-300 text-purple-800 px-3 py-1 rounded-full"><i class="fas fa-chevron-right"></i></button>
@@ -214,8 +208,29 @@
     const { data, error } = await query.order('booking_date', { ascending: true });
     if (error) { showToast('Error fetching bookings', true); return; }
     if (!data.length) { bookingsListDiv.innerHTML = '<p class="text-purple-400 text-center py-6">No bookings yet.</p>'; return; }
-    const tableRows = data.map(b => `<tr class="border-b border-purple-100"><td class="px-4 py-3">${escapeHtml(b.name)}</td><td class="px-4 py-3">${escapeHtml(b.email)}</td><td class="px-4 py-3">${b.booking_date}</td><td class="px-4 py-3">${b.time}</td><td class="px-4 py-3">${b.guests}</td><td class="px-4 py-3">${b.service}</td><td class="px-4 py-3">${b.image_url ? `<a href="${b.image_url}" target="_blank" class="text-purple-500 mr-2"><i class="fas fa-image"></i></a>` : ''}<button onclick="window.editBooking('${b.id}')" class="text-indigo-500 mr-2"><i class="fas fa-edit"></i></button><button onclick="window.deleteBooking('${b.id}')" class="text-rose-500"><i class="fas fa-trash-alt"></i></button></td></tr>`).join('');
-    bookingsListDiv.innerHTML = `<table class="w-full"><thead class="bg-purple-50"><tr><th class="px-4 py-2 text-left">Name</th><th>Email</th><th>Date</th><th>Time</th><th>Guests</th><th>Service</th><th>Actions</th><tr></thead><tbody>${tableRows}</tbody></table>`;
+    const tableRows = data.map(b => `
+      <tr class="border-b border-purple-100">
+        <td class="px-4 py-3">${escapeHtml(b.name)}</td>
+        <td class="px-4 py-3">${escapeHtml(b.email)}</td>
+        <td class="px-4 py-3">${b.booking_date}</td>
+        <td class="px-4 py-3">${b.time}</td>
+        <td class="px-4 py-3">${b.guests}</td>
+        <td class="px-4 py-3">${b.service}</td>
+        <td class="px-4 py-3">
+          ${b.image_url ? `<a href="${b.image_url}" target="_blank" class="text-purple-500 mr-2"><i class="fas fa-image"></i></a>` : ''}
+          <button onclick="window.editBooking('${b.id}')" class="text-indigo-500 mr-2"><i class="fas fa-edit"></i></button>
+          <button onclick="window.deleteBooking('${b.id}')" class="text-rose-500"><i class="fas fa-trash-alt"></i></button>
+        </td>
+      </tr>
+    `).join('');
+    bookingsListDiv.innerHTML = `
+      <table class="w-full">
+        <thead class="bg-purple-50">
+          <tr><th class="px-4 py-2 text-left">Name</th><th>Email</th><th>Date</th><th>Time</th><th>Guests</th><th>Service</th><th>Actions</th></tr>
+        </thead>
+        <tbody>${tableRows}</tbody>
+      </table>
+    `;
   }
 
   function escapeHtml(str) { return str ? str.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])) : ''; }
@@ -352,17 +367,21 @@
     } else {
       showAuth();
     }
-    hideLoading(); // hide loading spinner after decision
+    hideLoading();
   }
 
   function showApp() {
     authContainer.style.display = 'none';
     appContainer.style.display = 'block';
     switchToView('dashboard');
+    // show mobile hamburger when app is visible
+    try { window.__reservibe?.setHamburgerVisible(true); } catch (e) {}
   }
   function showAuth() {
     authContainer.style.display = 'flex';
     appContainer.style.display = 'none';
+    // hide mobile hamburger on auth screens
+    try { window.__reservibe?.setHamburgerVisible(false); } catch (e) {}
     loginForm.classList.remove('hidden');
     registerForm.classList.add('hidden');
     forgotForm.classList.add('hidden');
@@ -371,7 +390,6 @@
     document.getElementById('reset-error').innerText = '';
   }
 
-  // Event listeners for auth
   loginForm.addEventListener('submit', async (e) => { e.preventDefault(); const email = document.getElementById('login-email').value; const password = document.getElementById('login-password').value; if (await login(email, password)) await checkSession(); });
   registerForm.addEventListener('submit', async (e) => { e.preventDefault(); const email = document.getElementById('reg-email').value; const password = document.getElementById('reg-password').value; if (await register(email, password)) { showToast('Registration successful! Please log in.'); showAuth(); } });
   forgotForm.addEventListener('submit', async (e) => { e.preventDefault(); const email = document.getElementById('reset-email').value; const errorDiv = document.getElementById('reset-error'); try { await resetPassword(email); errorDiv.innerText = ''; showToast(`Password reset link sent to ${email}. Check your inbox.`); showAuth(); } catch (err) { errorDiv.innerText = err.message; } });
