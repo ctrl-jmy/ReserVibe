@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>ReserVibe | Responsive Booking</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="script.js" defer></script>
+  <style>
+    /* responsive styles (unchanged) */
+    @media (max-width: 768px) {
+      .calendar-grid { gap: 0.25rem; }
+      .calendar-day { padding: 0.5rem 0.25rem; font-size: 0.7rem; }
+      .day-number { font-size: 0.9rem; }
+      .booking-count { font-size: 0.6rem; }
+      .sidebar {
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+        position: fixed;
+        z-index: 40;
+        width: 80%;
+        max-width: 280px;
+        height: 100%;
+        top: 0;
+        left: 0;
+        background: rgba(255, 255, 255, 0.95) !important;
+        backdrop-filter: blur(12px);
+      }
+      .sidebar.open { transform: translateX(0); box-shadow: 4px 0 20px rgba(0,0,0,0.2); }
+      .menu-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.3); z-index: 35; display: none; }
+      .menu-overlay.open { display: block; }
+      .menu-toggle {
+        display: block;
+        position: fixed;
+        top: 1rem;
+        left: 1rem;
+        z-index: 45;
+        background: white;
+        border-radius: 50%;
+        padding: 0.5rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      }
+    }
+    @media (min-width: 769px) {
+      .menu-toggle, .menu-overlay { display: none; }
+      .sidebar {
+        transform: none !important;
+        position: relative;
+        width: 280px;
+        background: rgba(255, 255, 255, 0.85) !important;
+        backdrop-filter: blur(12px);
+        height: 100vh;
+      }
+    }
+    .team-photo {
+      width: 100px;
+      height: 100px;
+      background: #e9d5ff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto;
+      color: #7c3aed;
+      font-size: 2rem;
+      overflow: hidden;
+    }
+    .team-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    body, #app-container, .flex.min-h-screen {
+      min-height: 100vh;
+    }
+    .sidebar {
+      height: 100%;
+      overflow-y: auto;
+    }
+    /* hide both containers initially, show loading spinner */
+    #auth-container, #app-container {
+      display: none;
+    }
+    #loading-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+  </style>
+</head>
+<body class="relative">
+
+  <div id="loading-container" class="flex items-center justify-center min-h-screen">
+    <div class="text-center">
+      <i class="fas fa-spinner fa-pulse text-4xl text-purple-500 mb-2"></i>
+      <p class="text-purple-600">Loading ReserVibe...</p>
+    </div>
+  </div>
+
+  <button id="menu-toggle" class="menu-toggle fixed top-4 left-4 z-50 bg-white rounded-full p-2 shadow-md lg:hidden">
+    <i class="fas fa-bars text-purple-600 text-xl"></i>
+  </button>
+  <div id="menu-overlay" class="menu-overlay"></div>
+
+  <div class="bg-shape shape1"></div>
+  <div class="bg-shape shape2"></div>
+  <div class="bg-shape shape3"></div>
+
+  <!-- AUTH CONTAINER -->
+  <div id="auth-container" class="flex items-center justify-center min-h-screen p-4 relative z-10">
+    <div class="glass-card w-full max-w-md p-8">
+      <div class="text-center mb-6">
+        <i class="fas fa-calendar-alt text-4xl text-purple-500 mb-2"></i>
+        <h1 class="font-serif text-4xl font-bold text-purple-800">ReserVibe</h1>
+        <p class="text-purple-500 mt-1">Happy bookings · Happy Stays</p>
+      </div>
+      <form id="login-form" class="space-y-4">
+        <input type="email" id="login-email" placeholder="Email" class="w-full px-4 py-3 luxury-input focus:outline-none">
+        <input type="password" id="login-password" placeholder="Password" class="w-full px-4 py-3 luxury-input focus:outline-none">
+        <button type="submit" class="w-full btn-pastel py-3 rounded-full">Sign In</button>
+        <div id="auth-error" class="text-red-400 text-sm text-center"></div>
+        <div class="flex justify-between text-sm mt-2">
+          <button id="forgot-password-btn" class="text-purple-500 hover:underline">Forgot password?</button>
+          <button id="show-register-link" class="text-purple-500 hover:underline">Create account</button>
+        </div>
+      </form>
+      <form id="forgot-form" class="space-y-4 hidden">
+        <p class="text-sm text-purple-600">Enter your email and we'll send you a password reset link.</p>
+        <input type="email" id="reset-email" placeholder="Email" class="w-full px-4 py-3 luxury-input focus:outline-none">
+        <button type="submit" class="w-full bg-purple-200 text-purple-800 py-3 rounded-full hover:bg-purple-300 transition">Send reset link</button>
+        <div id="reset-error" class="text-red-400 text-sm text-center"></div>
+        <div class="text-center mt-2">
+          <button id="back-to-login-from-reset" class="text-purple-500 text-sm hover:underline">← Back to Sign In</button>
+        </div>
+      </form>
+      <form id="register-form" class="space-y-4 hidden">
+        <input type="email" id="reg-email" placeholder="Email" class="w-full px-4 py-3 luxury-input focus:outline-none">
+        <input type="password" id="reg-password" placeholder="Password" class="w-full px-4 py-3 luxury-input focus:outline-none">
+        <button type="submit" class="w-full bg-purple-100 text-purple-700 py-3 rounded-full hover:bg-purple-200 transition">Create Account</button>
+        <div id="reg-error" class="text-red-400 text-sm text-center"></div>
+        <div class="text-center mt-2">
+          <button id="back-to-login-from-register" class="text-purple-500 text-sm hover:underline">← Back to Sign In</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MAIN APP -->
+  <div id="app-container" class="hidden relative z-10">
+    <div class="flex min-h-screen">
+      <aside id="sidebar" class="sidebar fixed lg:relative bg-white/80 backdrop-blur-md border-r border-purple-200 flex flex-col shadow-xl h-full z-40">
+        <div class="p-5 border-b border-purple-200">
+          <div class="flex items-center gap-3">
+            <i class="fas fa-spa text-2xl text-purple-600"></i>
+            <span class="font-serif text-2xl font-bold text-purple-800">ReserVibe</span>
+          </div>
+          <p class="text-purple-400 text-xs mt-2">your peaceful booking hub</p>
+        </div>
+        <nav class="flex-1 p-4 space-y-1">
+          <a href="#" id="nav-dashboard" class="sidebar-link flex items-center gap-4 px-4 py-3 rounded-lg transition"><i class="fas fa-chart-line w-5"></i>Dashboard</a>
+          <a href="#" id="nav-booking" class="sidebar-link flex items-center gap-4 px-4 py-3 rounded-lg transition"><i class="fas fa-calendar-plus w-5"></i>Booking</a>
+          <a href="#" id="nav-about" class="sidebar-link flex items-center gap-4 px-4 py-3 rounded-lg transition"><i class="fas fa-info-circle w-5"></i>About</a>
+        </nav>
+        <div class="p-4 border-t border-purple-200">
+          <button id="logout-btn" class="sidebar-link flex items-center gap-4 w-full px-4 py-3 rounded-lg text-purple-600 transition"><i class="fas fa-sign-out-alt w-5"></i>Sign Out</button>
+        </div>
+      </aside>
+
+      <main class="flex-1 overflow-y-auto p-4 md:p-8 mt-14 lg:mt-0">
+        <!-- DASHBOARD VIEW -->
+        <div id="dashboard-view">
+          <div class="flex flex-wrap justify-between items-center mb-6 gap-3">
+            <div>
+              <h1 class="font-serif text-2xl md:text-4xl font-bold text-purple-800">📋 My Reservations</h1>
+              <p class="text-purple-500 text-sm md:text-base">Manage your upcoming and past bookings</p>
+            </div>
+            <div id="role-badge" class="bg-purple-50 px-3 py-1 rounded-full text-xs md:text-sm text-purple-700"></div>
+          </div>
+          <div class="glass-card p-5 mb-6">
+            <h2 class="font-serif text-xl text-purple-700 mb-3"><i class="fas fa-chart-simple"></i> Quick stats</h2>
+            <div id="stats-summary" class="space-y-3">
+              <div class="flex justify-between"><span>📅 Total bookings</span><span id="total-bookings" class="font-bold">0</span></div>
+              <div class="flex justify-between"><span>⭐ Fully booked days</span><span id="full-days" class="font-bold text-rose-500">0</span></div>
+              <div class="flex justify-between"><span>🟢 Available days</span><span id="available-days" class="font-bold text-green-600">0</span></div>
+            </div>
+          </div>
+          <div class="glass-card p-5 overflow-x-auto">
+            <h2 class="font-serif text-xl text-purple-700 mb-3"><i class="fas fa-list-ul mr-2"></i>Your reservations</h2>
+            <div id="bookings-list" class="min-w-[500px] md:min-w-0"><p class="text-purple-400 text-center py-6">Loading your bookings...</p></div>
+          </div>
+        </div>
+
+        <!-- BOOKING VIEW -->
+        <div id="booking-view" class="hidden">
+          <div class="mb-6">
+            <h1 class="font-serif text-2xl md:text-4xl font-bold text-purple-800">📅 Make a Reservation</h1>
+            <p class="text-purple-500 text-sm md:text-base">Check availability and create a new booking</p>
+          </div>
+          <div class="glass-card p-4 md:p-5 mb-6 overflow-x-auto">
+            <div class="flex justify-between items-center mb-4 flex-wrap gap-2">
+              <h2 class="font-serif text-lg md:text-xl text-purple-700"><i class="fas fa-calendar-alt mr-2"></i>Availability calendar</h2>
+              <div class="text-xs text-purple-400"><i class="fas fa-info-circle"></i> Red = fully booked (max 5/day)</div>
+            </div>
+            <div id="calendar-container" class="mt-2 min-w-[280px]"><div class="text-center py-8 text-purple-400">Loading calendar...</div></div>
+          </div>
+          <div class="glass-card p-5 md:p-8">
+            <div class="flex items-center gap-3 mb-6">
+              <i class="fas fa-pen-alt text-2xl text-purple-600"></i>
+              <h2 class="font-serif text-2xl font-bold text-purple-800">Booking form</h2>
+            </div>
+            <form id="booking-form" enctype="multipart/form-data">
+              <input type="hidden" id="booking-id">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div><label class="block text-purple-700 mb-1">Full name *</label><input type="text" id="name" required class="w-full px-4 py-2 luxury-input rounded-xl"></div>
+                <div><label class="block text-purple-700 mb-1">Email *</label><input type="email" id="email" required class="w-full px-4 py-2 luxury-input rounded-xl"></div>
+                <div><label class="block text-purple-700 mb-1">Date *</label><input type="date" id="booking-date" required class="w-full px-4 py-2 luxury-input rounded-xl"></div>
+                <div><label class="block text-purple-700 mb-1">Time *</label><select id="time" class="w-full px-4 py-2 luxury-input rounded-xl"><option>10:00</option><option>12:00</option><option>14:00</option><option>16:00</option><option>18:00</option><option>20:00</option></select></div>
+                <div><label class="block text-purple-700 mb-1">Guests *</label><input type="number" id="guests" min="1" max="20" class="w-full px-4 py-2 luxury-input rounded-xl"></div>
+                <div><label class="block text-purple-700 mb-1">Service *</label><select id="service" class="w-full px-4 py-2 luxury-input rounded-xl"><option>Dinner Table</option><option>Private Party</option><option>Conference Room</option><option>Spa Package</option></select></div>
+                <div class="sm:col-span-2">
+                  <label class="block text-purple-700 mb-1">Upload file (optional)</label>
+                  <input type="file" id="image-file" accept="image/*, .pdf" class="w-full">
+                  <p class="text-xs text-purple-400 mt-1"><i class="fas fa-info-circle"></i> Please upload a payment receipt or valid ID for verification.</p>
+                </div>
+                <div id="current-image" class="sm:col-span-2 text-sm text-purple-500"></div>
+              </div>
+              <div class="flex flex-wrap gap-4 mt-8">
+                <button type="submit" class="btn-pastel px-6 py-2 rounded-full">Save booking</button>
+                <button type="button" id="cancel-form" class="bg-purple-100 text-purple-700 px-6 py-2 rounded-full hover:bg-purple-200 transition">Cancel</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- ABOUT VIEW -->
+        <div id="about-view" class="hidden">
+          <div id="about-content" class="max-w-4xl mx-auto">
+            <div class="text-center py-10 text-purple-400">Loading about section...</div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+  <div id="toast" class="fixed bottom-4 right-4 glass-card text-purple-800 px-4 py-2 rounded-xl shadow-xl hidden transition-all z-50 border-l-4 border-purple-500 text-sm md:text-base"></div>
+
+  <script>
+    // Sidebar toggle (unchanged)
+    const menuToggle = document.getElementById('menu-toggle');
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('menu-overlay');
+    function closeSidebar() { sidebar?.classList.remove('open'); overlay?.classList.remove('open'); }
+    function openSidebar() { sidebar?.classList.add('open'); overlay?.classList.add('open'); }
+    if (menuToggle && sidebar && overlay) {
+      menuToggle.addEventListener('click', (e) => { e.stopPropagation(); sidebar.classList.contains('open') ? closeSidebar() : openSidebar(); });
+      overlay.addEventListener('click', closeSidebar);
+      window.addEventListener('resize', () => { if (window.innerWidth >= 768) closeSidebar(); });
+    }
+    document.querySelectorAll('#nav-dashboard, #nav-booking, #nav-about, #logout-btn').forEach(link => {
+      link.addEventListener('click', () => { if (window.innerWidth < 768) closeSidebar(); });
+    });
+  </script>
+</body>
+</html>
