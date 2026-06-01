@@ -1,0 +1,147 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: linear-gradient(145deg, #fbfafe 0%, #f3eefa 100%);
+  min-height: 100vh;
+  position: relative;
+}
+
+.bg-shape {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(80px);
+  z-index: 0;
+  opacity: 0.4;
+  animation: float 20s infinite ease-in-out;
+}
+
+@keyframes float {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(40px, -30px) scale(1.05); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+
+.shape1 { width: 400px; height: 400px; background: #c4b5fd; top: -150px; left: -100px; }
+.shape2 { width: 500px; height: 500px; background: #fbcfe8; bottom: -200px; right: -150px; animation-duration: 25s; }
+.shape3 { width: 300px; height: 300px; background: #bfdbfe; top: 40%; right: 10%; animation-duration: 18s; }
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(167, 139, 250, 0.3);
+  border-radius: 2rem;
+  box-shadow: 0 20px 35px -10px rgba(0, 0, 0, 0.05);
+}
+
+.btn-pastel {
+  background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%);
+  transition: all 0.2s ease;
+  color: white;
+  cursor: pointer;
+}
+
+.btn-pastel:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -5px rgba(139, 92, 246, 0.4);
+}
+
+.sidebar {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(16px);
+  border-right: 1px solid rgba(139, 92, 246, 0.2);
+}
+
+.sidebar-link {
+  color: #4c1d95;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.sidebar-link:hover {
+  background: rgba(139, 92, 246, 0.12);
+  color: #6d28d9;
+  transform: translateX(5px);
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.5rem;
+}
+
+.calendar-day {
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 1rem;
+  padding: 0.75rem 0.5rem;
+  text-align: center;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #4c1d95;
+  transition: all 0.2s;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.calendar-day:hover {
+  background: #e9d5ff;
+  transform: scale(1.02);
+  border-color: #a78bfa;
+}
+
+.calendar-day.selected {
+  background: #c4b5fd;
+  color: white;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+.day-number {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.booking-count {
+  font-size: 0.7rem;
+  margin-top: 4px;
+  color: #6d28d9;
+}
+
+.full-day {
+  background: #ffe4e2;
+  border-color: #f87171;
+}
+
+.full-day .booking-count {
+  color: #dc2626;
+  font-weight: bold;
+}
+
+.weekday-header {
+  text-align: center;
+  font-weight: 600;
+  color: #8b5cf6;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  padding-bottom: 0.5rem;
+}
+
+.luxury-input {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #e9d5ff;
+  border-radius: 1rem;
+  transition: all 0.2s;
+}
+
+.luxury-input:focus {
+  border-color: #a78bfa;
+  box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.2);
+  outline: none;
+}
+
+.font-serif {
+  font-family: 'Playfair Display', serif;
+}
