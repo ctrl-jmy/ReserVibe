@@ -28,7 +28,7 @@
 
   const MAX_PER_DAY = 5;
 
-  // DOM elements
+  // DOM elements (original)
   const authContainer = document.getElementById('auth-container');
   const appContainer = document.getElementById('app-container');
   const loginForm = document.getElementById('login-form');
@@ -40,13 +40,15 @@
   const backToLoginFromRegister = document.getElementById('back-to-login-from-register');
   const logoutBtn = document.getElementById('logout-btn');
   const dashboardDiv = document.getElementById('dashboard-view');
-  const formDiv = document.getElementById('form-view');
+  const bookingDiv = document.getElementById('booking-view');      // new
+  const aboutDiv = document.getElementById('about-view');          // new
   const bookingsListDiv = document.getElementById('bookings-list');
   const bookingForm = document.getElementById('booking-form');
   const cancelBtn = document.getElementById('cancel-form');
   const roleBadge = document.getElementById('role-badge');
   const navDashboard = document.getElementById('nav-dashboard');
-  const navNewBooking = document.getElementById('nav-new-booking');
+  const navBooking = document.getElementById('nav-booking');       // new
+  const navAbout = document.getElementById('nav-about');           // new
   const calendarContainer = document.getElementById('calendar-container');
   const totalBookingsSpan = document.getElementById('total-bookings');
   const fullDaysSpan = document.getElementById('full-days');
@@ -69,13 +71,8 @@
   }
 
   async function loadAboutSection() {
-    const placeholder = document.getElementById('about-placeholder');
-    if (!placeholder) return;
-    try {
-      const response = await fetch('about.html');
-      const html = await response.text();
-      placeholder.innerHTML = html;
-    } catch (err) { console.error(err); }
+    // This function is no longer needed because the About view is now separate.
+    // We'll keep it empty or remove it.
   }
 
   async function ensureProfile() {
@@ -164,8 +161,12 @@
         const count = allBookings.filter(b => b.booking_date === date).length;
         if (count >= MAX_PER_DAY) showToast(`⚠️ ${date} fully booked`, true);
         else showToast(`📅 ${date} – ${MAX_PER_DAY - count} slots left`, false);
-        if (!formDiv.classList.contains('hidden')) switchView('dashboard');
-        else navNewBooking.click();
+        // If we are not already on booking view, switch to it
+        if (bookingDiv && bookingDiv.classList.contains('hidden')) {
+          dashboardDiv?.classList.add('hidden');
+          bookingDiv.classList.remove('hidden');
+          aboutDiv?.classList.add('hidden');
+        }
       });
     });
   }
@@ -218,7 +219,10 @@
     document.getElementById('guests').value = data.guests;
     document.getElementById('service').value = data.service;
     document.getElementById('current-image').innerHTML = data.image_url ? `Current: <a href="${data.image_url}" target="_blank">View</a>` : '';
-    switchView('form');
+    // Switch to booking view
+    if (dashboardDiv) dashboardDiv.classList.add('hidden');
+    if (bookingDiv) bookingDiv.classList.remove('hidden');
+    if (aboutDiv) aboutDiv.classList.add('hidden');
   };
 
   window.deleteBooking = async (id) => {
@@ -276,7 +280,10 @@
     }
     if (error) return showToast('Operation failed: ' + error.message, true);
     resetForm();
-    switchView('dashboard');
+    // After successful save, go to dashboard view
+    if (dashboardDiv) dashboardDiv.classList.remove('hidden');
+    if (bookingDiv) bookingDiv.classList.add('hidden');
+    if (aboutDiv) aboutDiv.classList.add('hidden');
     await fetchAllBookings();
     renderCalendar();
     fetchAndDisplayBookings();
@@ -284,10 +291,48 @@
   });
 
   function resetForm() { bookingForm.reset(); document.getElementById('booking-id').value = ''; document.getElementById('current-image').innerHTML = ''; }
-  function switchView(view) { if (view === 'dashboard') { dashboardDiv.classList.remove('hidden'); formDiv.classList.add('hidden'); } else { dashboardDiv.classList.add('hidden'); formDiv.classList.remove('hidden'); } }
-  cancelBtn.addEventListener('click', () => { resetForm(); switchView('dashboard'); });
-  navDashboard.addEventListener('click', (e) => { e.preventDefault(); switchView('dashboard'); });
-  navNewBooking.addEventListener('click', (e) => { e.preventDefault(); resetForm(); switchView('form'); });
+
+  // Old switchView is no longer used – we use direct view toggling.
+  // But we keep it for compatibility.
+  function switchView(view) { /* not used */ }
+
+  // Navigation handlers (override)
+  function setupNavigation() {
+    if (navDashboard) {
+      navDashboard.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (dashboardDiv) dashboardDiv.classList.remove('hidden');
+        if (bookingDiv) bookingDiv.classList.add('hidden');
+        if (aboutDiv) aboutDiv.classList.add('hidden');
+      });
+    }
+    if (navBooking) {
+      navBooking.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (dashboardDiv) dashboardDiv.classList.add('hidden');
+        if (bookingDiv) bookingDiv.classList.remove('hidden');
+        if (aboutDiv) aboutDiv.classList.add('hidden');
+        // Ensure calendar is rendered (it should already be)
+        renderCalendar();
+      });
+    }
+    if (navAbout) {
+      navAbout.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (dashboardDiv) dashboardDiv.classList.add('hidden');
+        if (bookingDiv) bookingDiv.classList.add('hidden');
+        if (aboutDiv) aboutDiv.classList.remove('hidden');
+      });
+    }
+    if (cancelBtn) {
+      cancelBtn.addEventListener('click', () => {
+        resetForm();
+        if (dashboardDiv) dashboardDiv.classList.remove('hidden');
+        if (bookingDiv) bookingDiv.classList.add('hidden');
+        if (aboutDiv) aboutDiv.classList.add('hidden');
+      });
+    }
+  }
 
   function subscribeToRealtime() {
     if (realtimeSubscription) realtimeSubscription.unsubscribe();
@@ -351,8 +396,13 @@
   function showApp() {
     authContainer.classList.add('hidden');
     appContainer.classList.remove('hidden');
-    loadAboutSection();
+    setupNavigation(); // set up view switching
+    // Show dashboard by default
+    if (dashboardDiv) dashboardDiv.classList.remove('hidden');
+    if (bookingDiv) bookingDiv.classList.add('hidden');
+    if (aboutDiv) aboutDiv.classList.add('hidden');
   }
+
   function showAuth() {
     authContainer.classList.remove('hidden');
     appContainer.classList.add('hidden');
@@ -364,6 +414,7 @@
     document.getElementById('reset-error').innerText = '';
   }
 
+  // Event listeners for auth
   loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const email = document.getElementById('login-email').value;
